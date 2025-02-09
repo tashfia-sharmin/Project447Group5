@@ -2,9 +2,11 @@ import requests
 from bs4 import BeautifulSoup
 from collections import Counter
 import re
+import os
+import csv
 
 def convert_to_uni(word):
-    return [ord(char) for char in word]
+    return tuple(ord(char) for char in word)
 
 def scrape_word_frequency_from_file(file_path):
     try:
@@ -24,40 +26,31 @@ def scrape_word_frequency_from_file(file_path):
             subtitle = subtitle.replace('-', '')
             words = re.findall(r'\b\w+\b', subtitle.lower())
             word_frequency.update(words)
-            uni_word_frequency.update(convert_to_uni(word) for word in words)
-
-        return uni_word_frequency
+        return word_frequency
 
     except Exception as e:
         print(f"Error: {e}")
         return None, None
 
-# TEST
-# word_freq = scrape_word_frequency_from_file("output2.html")
-# print(word_freq.most_common(10))  # Print the 10 most common words
+def process_all_languages(output_file = "data.csv"):
+    data = []
+    for i in range(38):
+        file_path = f"./script_html/lang{i}.html"
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            continue
+        word_freq = scrape_word_frequency_from_file(file_path)
+        if word_freq:
+            for word, freq in word_freq.items():
+                #include this if we want to filter out 1 letter words
+                # if len(word) > 1:
+                uni_word = convert_to_uni(word)
+                data.append([word, uni_word, freq, i])
+    # Write to CSV file
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Word", "Unicode_Sequence", "Frequency", "Language_ID"])  # Header
+        writer.writerows(data)
+    print(f"Data saved to {output_file}") 
 
-
-# OLD
-# def scrape_word_frequency(url):
-#     try:
-#         response = requests.get(url, timeout=10)
-#         response.raise_for_status()  # Raise an error for bad responses (4xx and 5xx)
-
-#         # Parse the HTML content
-#         soup = BeautifulSoup(response.text, 'html.parser')
-
-#         script_content = soup.find('td', class_='scrtext').get_text(separator=" ", strip=True)
-#         words = re.findall(r'\b\w+\b', script_content.lower())
-#         uni_word_frequency = Counter(tuple(convert_to_uni(word)) for word in words)
-
-#         return uni_word_frequency
-
-#     except requests.exceptions.RequestException as e:
-#         print(f"Error: {e}")
-#         return {}
-#     except AttributeError:
-#         print("Error: Unable to find the script content on the page.")
-#         return {}
-
-# url = "https://imsdb.com/scripts/Interstellar.html"
-# word_frequency = scrape_word_frequency(url)
+process_all_languages()
