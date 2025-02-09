@@ -11,7 +11,7 @@ class MyModel:
     """
 
     @classmethod
-    def load_training_data(cls):
+    def load_training_data(cls, html_dir):
         # your code here
         # this particular model doesn't train
         return []
