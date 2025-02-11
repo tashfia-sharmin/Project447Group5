@@ -92,7 +92,8 @@ data = model.load_training_data("train_split_en.csv")  # Load data
 model.run_train(data)  # Train the model
 model.save('work')
 # Predict next Unicode characters for the sequence "hel"
-predictions = model.run_pred((104, 101, 108))
+model1 = MyModel.load('work')
+predictions = model1.run_pred((104, 101, 108))
 predictions = [unicode_to_char(p) for p in predictions]
 print(predictions)
 model.write_pred(predictions, 'pred.txt')
@@ -128,7 +129,7 @@ model.write_pred(predictions, 'pred.txt')
 
 #     elif args.mode == 'test':
 #         print('Loading model')
-#         model = MyModel.load('work/model.checkpoint')
+#         model = MyModel.load('work')
 
 #         print('Loading test data from {}'.format(args.test_data))
 #         test_data = MyModel.load_test_data(args.test_data)
