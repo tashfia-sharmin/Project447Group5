@@ -81,6 +81,9 @@ class MyModel:
         with open(os.path.join(work_dir, 'model.checkpoint')) as f:
             dummy_save = f.read()
         return MyModel()
+# Quick method to return the character from the unicode
+def unicode_to_char(unicode):
+    return chr(int(unicode, 16))
 
 # Small TEST - this works!
 model = MyModel(n=4)
@@ -89,6 +92,7 @@ model.run_train(data)  # Train the model
 
 # Predict next Unicode characters for the sequence "hel"
 predictions = model.run_pred((104, 101, 108))
+predictions = [unicode_to_char(p) for p in predictions]
 print(predictions)
 model.write_pred(predictions, 'output.txt')
 
