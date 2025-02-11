@@ -71,30 +71,31 @@ class MyModel:
     def save(self, work_dir):
         # your code here
         # this particular model has nothing to save, but for demonstration purposes we will save a blank file
-        with open(os.path.join(work_dir, 'model.checkpoint'), 'wt') as f:
-            f.write('dummy save')
+        os.makedirs(work_dir, exist_ok=True)
+        with open(os.path.join(work_dir, 'model.checkpoint'), 'wb') as f:
+             pickle.dump(self, f)
 
 
     @classmethod
     def load(cls, work_dir):
         # your code here
-        with open(os.path.join(work_dir, 'model.checkpoint')) as f:
-            dummy_save = f.read()
-        return MyModel()
+        with open(os.path.join(work_dir, 'model.checkpoint'), "rb") as f:
+            loaded_model = pickle.load(f)
+        return loaded_model
 # Quick method to return the character from the unicode
 def unicode_to_char(unicode):
-    return chr(int(unicode, 16))
+    return chr(unicode)
 
 # Small TEST - this works!
 model = MyModel(n=4)
 data = model.load_training_data("train_split_en.csv")  # Load data
 model.run_train(data)  # Train the model
-
+model.save('work')
 # Predict next Unicode characters for the sequence "hel"
 predictions = model.run_pred((104, 101, 108))
 predictions = [unicode_to_char(p) for p in predictions]
 print(predictions)
-model.write_pred(predictions, 'output.txt')
+model.write_pred(predictions, 'pred.txt')
 
 # Will work once we update to handle larger dataset -> think we need to update run_pred
 # i think we need to make sure this works tho
