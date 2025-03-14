@@ -26,7 +26,7 @@ class MyModel:
             next(reader)  # Skip header
             data = []
             for row in reader:
-                _, unicode_seq, frequency, language_id = row  # Ignore the Word column
+                unicode_seq, frequency, language_id = row  # Ignore the Word column
                 unicode_seq = eval(unicode_seq)
                 frequency = int(frequency)
                 language_id = int(language_id)
@@ -54,18 +54,46 @@ class MyModel:
                 # print(p)
                 f.write('{}\n'.format(p))
 
-    def run_train(self, data):
+    def run_train(self, data, batch_size):
         # Build raw frequency counts
-        for unicode_seq, frequency, _ in data:
-            for i in range(len(unicode_seq) - self.n + 1):
-                prefix = tuple(unicode_seq[i:i + self.n - 1])
-                next_char = unicode_seq[i + self.n - 1]
-                self.model[prefix][next_char] += frequency
-                self.vocab.add(next_char)
+        # for unicode_seq, frequency, _ in data:
+        #     for i in range(len(unicode_seq) - self.n + 1):
+        #         prefix = tuple(unicode_seq[i:i + self.n - 1])
+        #         next_char = unicode_seq[i + self.n - 1]
+        #         self.model[prefix][next_char] += frequency
+        #         self.vocab.add(next_char)
+
+        # vocab_size = len(self.vocab)
+
+        # # Convert counts to probabilities with Laplace smoothing
+        # for prefix, counts in self.model.items():
+        #     total = sum(counts.values()) + self.alpha * vocab_size
+        #     for char in self.vocab:
+        #         counts[char] = (counts.get(char, 0) + self.alpha) / total
+
+        temp_model = defaultdict(Counter)  # temp model + vocab for batching
+        temp_vocab = set()
+
+        for batch_start in range(0, len(data), batch_size):
+            batch = data[batch_start:batch_start + batch_size]
+
+            for unicode_seq, frequency, _ in batch:
+                for i in range(len(unicode_seq) - self.n + 1):
+                    prefix = tuple(unicode_seq[i:i + self.n - 1])
+                    next_char = unicode_seq[i + self.n - 1]
+                    temp_model[prefix][next_char] += frequency
+                    temp_vocab.add(next_char)
+
+            for prefix, counts in temp_model.items():
+                for char, count in counts.items():
+                    self.model[prefix][char] += count
+
+            self.vocab.update(temp_vocab)
+            temp_model.clear()
+            temp_vocab.clear()
 
         vocab_size = len(self.vocab)
 
-        # Convert counts to probabilities with Laplace smoothing
         for prefix, counts in self.model.items():
             total = sum(counts.values()) + self.alpha * vocab_size
             for char in self.vocab:
@@ -89,6 +117,7 @@ class MyModel:
             most_common_chars.update(counts)
 
         return [char for char, _ in most_common_chars.most_common(top_k)]
+
 
     def save(self, work_dir):
         with open(os.path.join(work_dir, 'model.pkl'), 'wb') as f:
@@ -121,8 +150,8 @@ def convert_to_uni(word):
 
 # Small TEST
 # model = MyModel(n=4)
-# data = model.load_training_data("src/train_split_en.csv")  # Load data
-# model.run_train(data)  # Train the model
+# data = model.load_training_data("train_split_en.csv")  # Load data
+# model.run_train(data, batch_size=20)
 
 # # using example input.txt
 # test_data = model.load_test_data("example/input.txt")
@@ -163,10 +192,10 @@ if __name__ == '__main__':
         model = MyModel(n=4)
 
         print('Loading training data')
-        train_data = MyModel.load_training_data('src/train_split_en.csv')
+        train_data = MyModel.load_training_data('data/train_split.csv')
 
         print('Training')
-        model.run_train(train_data)
+        model.run_train(train_data, batch_size=64)
 
         print('Saving model')
         model.save(args.work_dir)
