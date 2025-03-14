@@ -18,6 +18,7 @@ class MyModel:
         self.alpha = alpha  # Laplace smoothing factor
         self.model = defaultdict(Counter)
         self.vocab = set()  # Track unique characters
+        self.most_common_chars = None
 
     @classmethod
     def load_training_data(cls, file_path):
@@ -99,6 +100,12 @@ class MyModel:
             for char in self.vocab:
                 counts[char] = (counts.get(char, 0) + self.alpha) / total
 
+    def compute_most_common_chars(self):
+        most_common_chars = Counter()
+        for counts in self.model.values():
+            most_common_chars.update(counts)
+        return most_common_chars.most_common(3)
+
     def run_pred(self, sequence_unicode, top_k=3):
         sequence_unicode = tuple(sequence_unicode[-(self.n - 1):])  # Ensure correct prefix length
 
@@ -111,12 +118,8 @@ class MyModel:
                 return [char for char, _ in predictions[:top_k]]
             sequence_unicode = sequence_unicode[1:]  # Shorten prefix (backoff)
 
-        # If no match found, return most common characters in training data
-        most_common_chars = Counter()
-        for counts in self.model.values():
-            most_common_chars.update(counts)
-
-        return [char for char, _ in most_common_chars.most_common(top_k)]
+        # # If no match found, return cached most common characters
+        return [char for char, _ in self.most_common_chars]
 
 
     def save(self, work_dir):
@@ -138,6 +141,7 @@ class MyModel:
         loaded_model = cls(n, alpha)
         loaded_model.model = model
         loaded_model.vocab = vocab
+        loaded_model.most_common_chars = loaded_model.compute_most_common_chars()
         return loaded_model
 
 # Quick method to return the character from Unicode
