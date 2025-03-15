@@ -6,7 +6,6 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import csv
 from collections import defaultdict, Counter
 import pickle
-import json
 
 
 class MyModel:
@@ -50,28 +49,12 @@ class MyModel:
 
     @classmethod
     def write_pred(cls, preds, fname):
-        with open(fname, 'wt') as f:
+        with open(fname, 'wt', encoding='utf-8') as f:
             for p in preds:
-                # print(p)
+                print(p)
                 f.write('{}\n'.format(p))
 
     def run_train(self, data, batch_size):
-        # Build raw frequency counts
-        # for unicode_seq, frequency, _ in data:
-        #     for i in range(len(unicode_seq) - self.n + 1):
-        #         prefix = tuple(unicode_seq[i:i + self.n - 1])
-        #         next_char = unicode_seq[i + self.n - 1]
-        #         self.model[prefix][next_char] += frequency
-        #         self.vocab.add(next_char)
-
-        # vocab_size = len(self.vocab)
-
-        # # Convert counts to probabilities with Laplace smoothing
-        # for prefix, counts in self.model.items():
-        #     total = sum(counts.values()) + self.alpha * vocab_size
-        #     for char in self.vocab:
-        #         counts[char] = (counts.get(char, 0) + self.alpha) / total
-
         temp_model = defaultdict(Counter)  # temp model + vocab for batching
         temp_vocab = set()
 
@@ -138,6 +121,7 @@ class MyModel:
 
         with open(file_path, 'rb') as f:
             n, alpha, model, vocab = pickle.load(f)
+
         loaded_model = cls(n, alpha)
         loaded_model.model = model
         loaded_model.vocab = vocab
